@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "pwa-node",
+            "request": "launch",
+            "name": "Launch YouTube Agent Orchestrator",
+            "program": "${workspaceFolder}/src/index.ts",
+            "preLaunchTask": "npm: install",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
