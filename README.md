@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/nsokhela1102-beep/youtube-agent-orchestrator/actions/workflows/ci.yml/badge.svg)](https://github.com/nsokhela1102-beep/youtube-agent-orchestrator/actions/workflows/ci.yml)
 
-This workspace contains a TypeScript scaffold for orchestrating multiple generic automation agents driven by prompts.
+This workspace contains a TypeScript scaffold for orchestrating multiple generic prompt-driven automation agents.
 
 ## What is included
 

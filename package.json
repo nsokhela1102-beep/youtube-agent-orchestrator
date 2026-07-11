@@ -1,8 +1,8 @@
 {
-  "name": "youtube-agent-orchestrator",
+  "name": "sokhela-agents-prompt-ui",
   "version": "0.1.0",
   "private": true,
-  "description": "Scaffold for orchestrating multiple AI-style YouTube automation agents.",
+  "description": "Scaffold for orchestrating generic prompt-driven automation agents.",
   "type": "module",
   "scripts": {
     "build": "tsc",

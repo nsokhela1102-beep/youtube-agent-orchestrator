@@ -1,19 +1,48 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "npm: install",
-            "type": "shell",
-            "command": "npm install",
-            "problemMatcher": []
-        },
-        {
-            "label": "npm: build",
-            "type": "shell",
-            "command": "npm run build",
-            "problemMatcher": [
-                "$tsc"
-            ]
-        }
-    ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "npm: install",
+			"type": "shell",
+			"command": "npm install",
+			"problemMatcher": []
+		},
+		{
+			"label": "npm: build",
+			"type": "shell",
+			"command": "npm run build",
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "git status",
+			"type": "shell",
+			"command": "cmd /c \"cd /d C:\\Users\\nkululeko\\AI Agents && git status --short && echo --- && git branch --show-current\""
+		},
+		{
+			"label": "git status",
+			"type": "shell",
+			"command": "Set-Location 'C:\\Users\\nkululeko\\AI Agents'; git status --short; Write-Output '---'; git branch --show-current"
+		},
+		{
+			"label": "git status",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"status",
+				"--short"
+			]
+		},
+		{
+			"label": "git status via powershell",
+			"type": "shell",
+			"command": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Set-Location 'C:\\Users\\nkululeko\\AI Agents'; git status --short; Write-Output '---'; git branch --show-current\""
+		},
+		{
+			"label": "stage project changes",
+			"type": "shell",
+			"command": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Set-Location 'C:\\Users\\nkululeko\\AI Agents'; git add README.md package.json src/promptPlanner.ts src/taskRunner.ts src/ui.ts .vscode/tasks.json; git status --short\""
+		}
+	]
 }

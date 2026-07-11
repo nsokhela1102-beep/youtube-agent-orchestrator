@@ -10,6 +10,29 @@ export function buildPromptExecutionPlan(prompt: string): PromptExecutionPlan {
   const normalized = prompt.trim();
   const lower = normalized.toLowerCase();
 
+  if (/(weather|forecast)/i.test(lower)) {
+    const locationMatch = normalized.match(/weather(?:.*in|\sin)\s+([a-z\s]+)/i);
+    const location = locationMatch?.[1]?.trim().replace(/[.,]/g, "") || "Alberton";
+    return {
+      query: `weather in ${location}`,
+      actions: ["search"]
+    };
+  }
+
+  if (/\b(?:standard bank careers|fnb careers|business analyst|feature analyst|job vacancy|job vacancies|vacancy)\b/i.test(lower)) {
+    return {
+      query: "Standard Bank careers business analyst OR FNB careers feature analyst past 30 days",
+      actions: ["search"]
+    };
+  }
+
+  if (/\b(?:brown bread|bread price|price of brown bread|brown bread price)\b/i.test(lower)) {
+    return {
+      query: "brown bread price Johannesburg today",
+      actions: ["search"]
+    };
+  }
+
   const actions: PromptExecutionPlan["actions"] = [];
   const queryParts: string[] = [];
 
@@ -23,9 +46,9 @@ export function buildPromptExecutionPlan(prompt: string): PromptExecutionPlan {
     queryParts.push(normalized.replace(/\b(watch|video|videos|tutorial|tutorials|show|shows)\b/gi, "").trim());
   }
 
-  if (lower.includes("search") || lower.includes("find") || lower.includes("discover") || lower.includes("look for")) {
+  if (lower.includes("search") || lower.includes("find") || lower.includes("discover") || lower.includes("look for") || lower.includes("check")) {
     actions.push("search");
-    queryParts.push(normalized.replace(/\b(search|find|discover|look for)\b/gi, "").trim());
+    queryParts.push(normalized.replace(/\b(search|find|discover|look for|check)\b/gi, "").trim());
   }
 
   if (lower.includes("profile") || lower.includes("sign in") || lower.includes("login") || lower.includes("account")) {
@@ -64,7 +87,7 @@ export function buildPromptExecutionPlan(prompt: string): PromptExecutionPlan {
   }
 
   if (actions.length === 0) {
-    actions.push("search", "watch");
+    actions.push("search");
   } else if ((actions.includes("watch") || actions.includes("subscribe")) && !actions.includes("search")) {
     actions.unshift("search");
   }

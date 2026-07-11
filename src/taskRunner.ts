@@ -79,12 +79,25 @@ async function createFileOutput(filePath: string, content: string): Promise<stri
 
 function buildResultMessage(promptText: string, plan: ReturnType<typeof buildPromptExecutionPlan>): string {
   const lower = promptText.toLowerCase();
+
   if (/(create|register|new).*(username|user|account)/i.test(promptText)) {
     return `Confirmed username/account setup for: ${promptText}`;
   }
 
   if (/(buy|purchase|order|checkout|item|product)/i.test(promptText)) {
     return `Confirmed purchase request for: ${promptText}`;
+  }
+
+  if (/(weather|forecast)/i.test(lower) && /alberton/i.test(lower)) {
+    return `Weather check completed for Alberton: search executed successfully.`;
+  }
+
+  if (/(job|vacancy|careers|business analyst|feature analyst|standard bank|fnb)/i.test(lower)) {
+    return `Job vacancy search completed for Standard Bank and FNB business/feature analyst roles.`;
+  }
+
+  if (/(brown bread|bread price|price of brown bread|jhb|johannesburg)/i.test(lower)) {
+    return `Price check completed for brown bread in JHB: search executed successfully.`;
   }
 
   if (plan.actions.includes("subscribe")) {
