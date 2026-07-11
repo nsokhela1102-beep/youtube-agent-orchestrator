@@ -15,10 +15,10 @@ const interests = [
 ];
 
 const descriptions = {
-  watch: "Find and watch trending YouTube videos for engagement testing.",
-  subscribe: "Subscribe to relevant channels on YouTube.",
-  search: "Search YouTube for subject matter and explore results.",
-  profile: "Open YouTube profile and configuration flows." 
+  watch: "Search and consume relevant content or media for the prompt.",
+  subscribe: "Follow or subscribe to relevant resources based on the prompt.",
+  search: "Search the web for the requested topic and gather results.",
+  profile: "Open profile or account-related pages based on the prompt." 
 };
 
 function getRandomInterests(index: number): string[] {
@@ -29,7 +29,7 @@ export const AGENTS: AgentConfig[] = Array.from({ length: 100 }, (_, i) => {
   const taskType = i % 4 === 0 ? "watch" : i % 4 === 1 ? "subscribe" : i % 4 === 2 ? "search" : "profile";
   return {
     id: `agent-${String(i + 1).padStart(3, "0")}`,
-    name: `YouTube Agent ${i + 1}`,
+    name: `Agent ${i + 1}`,
     taskType,
     profile: {
       emailHint: `user${i + 1}@example.com`,

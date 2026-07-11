@@ -1,35 +1,46 @@
 import type { AgentConfig } from "./types.js";
-import type { Page } from "playwright";
-import { Agent } from "./agent.js";
+import type { Browser, Page } from "playwright";
+import { createNewPage } from "./browserAutomation.js";
+import { runTaskForAgent } from "./taskRunner.js";
 
-export async function runAgents(agentConfigs: AgentConfig[], page: Page, concurrency = 1): Promise<void> {
-    if (concurrency <= 1) {
-        for (const config of agentConfigs) {
-            const agent = new Agent(config, page);
-            console.log(`Starting ${config.id} (${config.taskType})`);
-            try {
-                await agent.run();
-                console.log(`Completed ${config.id}`);
-            } catch (error) {
-                console.error(`Agent ${config.id} failed:`, error);
-            }
-            await page.waitForTimeout(1000);
+export type LogCallback = (message: string) => void;
+
+export async function runAgents(agentConfigs: AgentConfig[], browser: Browser, concurrency = 1, onLog: LogCallback = () => { }): Promise<void> {
+    const workers = Math.max(1, concurrency);
+    const queue = [...agentConfigs];
+
+    async function runNextBatch(): Promise<void> {
+        if (queue.length === 0) {
+            return;
         }
-        return;
-    }
 
-    for (let i = 0; i < agentConfigs.length; i += concurrency) {
-        const batch = agentConfigs.slice(i, i + concurrency);
+        const batch = queue.splice(0, workers);
         await Promise.all(batch.map(async (config) => {
-            const agent = new Agent(config, page);
-            console.log(`Starting ${config.id} (${config.taskType})`);
+            const page = await createNewPage(browser);
+            const startMessage = `Starting ${config.id} (${config.taskType})`;
+            console.log(startMessage);
+            onLog(startMessage);
             try {
-                await agent.run();
-                console.log(`Completed ${config.id}`);
+                const result = await runTaskForAgent(config, page);
+                const outcomeMessage = result.success
+                    ? `SUCCESS: Agent ${config.id} ${result.message}`
+                    : `FAILED: Agent ${config.id} ${result.message}`;
+                console.log(outcomeMessage);
+                onLog(outcomeMessage);
             } catch (error) {
-                console.error(`Agent ${config.id} failed:`, error);
+                const errorMessage = `FAILED: Agent ${config.id} could not complete the task. ${error}`;
+                console.error(errorMessage);
+                onLog(errorMessage);
+            } finally {
+                await page.close();
             }
         }));
-        await page.waitForTimeout(1000);
+
+        if (queue.length > 0) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            await runNextBatch();
+        }
     }
+
+    await runNextBatch();
 }

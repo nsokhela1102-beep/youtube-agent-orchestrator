@@ -1,11 +1,13 @@
-# YouTube AI Agent Orchestrator
+# Sokhela's Agents Prompt UI
 
-This workspace contains a TypeScript scaffold for orchestrating multiple automation agents designed to interact with YouTube.
+[![CI](https://github.com/nsokhela1102-beep/youtube-agent-orchestrator/actions/workflows/ci.yml/badge.svg)](https://github.com/nsokhela1102-beep/youtube-agent-orchestrator/actions/workflows/ci.yml)
+
+This workspace contains a TypeScript scaffold for orchestrating multiple generic automation agents driven by prompts.
 
 ## What is included
 
 - `src/agents.ts`: 100 agent definitions with distinct task profiles.
-- `src/youtubeAutomation.ts`: browser automation helpers for YouTube navigation, watch, subscribe, and sign-in workflows.
+- `src/browserAutomation.ts`: browser automation helpers for generic web navigation and browser tasks.
 - `src/agent.ts`: agent orchestration layer.
 - `src/index.ts`: example entrypoint to boot a subset of agents.
 
@@ -45,9 +47,9 @@ winget install OpenJS.NodeJS
 
 ## Important
 
-This scaffold is intended for experimentation and learning. Do not use automation to violate YouTube or Google policies, or to create accounts in ways that violate terms of service.
+This scaffold is intended for experimentation and learning. Do not use automation to violate website policies, or to create accounts in ways that violate terms of service.
 
-YouTube account creation and sign-in flows may require manual interaction, CAPTCHA solving, or identity verification that cannot be fully automated in a compliant way.
+Account creation and sign-in flows may require manual interaction, CAPTCHA solving, or identity verification that cannot be fully automated in a compliant way.
 
 ## Concurrency & Headless Examples
 
@@ -71,4 +73,29 @@ Development (ts-node) headless:
 npx cross-env HEADLESS=true ts-node src/index.ts 5
 ```
 
+Run the prompt-based UI locally:
+
+```powershell
+npm run dev:ui
+```
+
+Then open `http://localhost:3000` and enter a prompt such as "watch AI tutorials" or "subscribe to programming channels." The UI will launch agents based on your prompt.
+
 CI notes: The provided GitHub Actions workflow includes caching for `npm` and Playwright browser downloads to speed up repeated runs.
+
+## How to merge
+
+1. Review the PR changes on GitHub:
+   - https://github.com/nsokhela1102-beep/youtube-agent-orchestrator/pull/1
+2. Ensure the CI workflow passes.
+3. If the changes are acceptable, merge using `Merge pull request`.
+4. Delete the branch if you no longer need it.
+
+## Auto-approve PR instructions
+
+If you want to approve and merge from the command line after CI passes, use:
+
+```powershell
+gh pr review 1 --approve
+gh pr merge 1 --merge
+```

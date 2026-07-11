@@ -1,4 +1,4 @@
-export type AgentTaskType = "watch" | "subscribe" | "search" | "profile";
+export type AgentTaskType = "watch" | "subscribe" | "search" | "profile" | "navigate";
 
 export interface AgentProfile {
   emailHint: string;
@@ -13,4 +13,5 @@ export interface AgentConfig {
   taskType: AgentTaskType;
   profile: AgentProfile;
   description: string;
+  promptText?: string;
 }

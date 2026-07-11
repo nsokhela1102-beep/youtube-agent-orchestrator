@@ -1,4 +1,4 @@
-import { launchBrowser, createNewPage } from "./youtubeAutomation.js";
+import { launchBrowser } from "./browserAutomation.js";
 import { AGENTS } from "./agents.js";
 import { runAgents } from "./orchestrator.js";
 
@@ -9,11 +9,11 @@ async function main() {
   const concurrency = concurrencyEnv ? Math.max(1, Number(concurrencyEnv)) : 1;
 
   const browser = await launchBrowser();
-  const page = await createNewPage(browser);
-
-  await runAgents(AGENTS.slice(0, agentCount), page, concurrency);
-
-  await browser.close();
+  try {
+    await runAgents(AGENTS.slice(0, agentCount), browser, concurrency);
+  } finally {
+    await browser.close();
+  }
 }
 
 main().catch((error) => {

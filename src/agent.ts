@@ -1,20 +1,18 @@
 import type { AgentConfig } from "./types.js";
 import type { Page } from "playwright";
-import { 
-  gotoYouTube,
-  searchYouTube,
-  openVideo,
-  watchVideo,
-  subscribeToChannel,
-  signInYouTube,
-  createProfilePlaceholder
-} from "./youtubeAutomation.js";
+import { searchWeb, navigateToUrl, normalizeUrlFromPrompt } from "./browserAutomation.js";
+import { buildPromptExecutionPlan } from "./promptPlanner.js";
 
 export class Agent {
-  constructor(public config: AgentConfig, private page: Page | null) {}
+  constructor(public config: AgentConfig, private page: Page | null) { }
 
   async run(): Promise<void> {
     if (!this.page) {
+      return;
+    }
+
+    if (this.config.promptText) {
+      await this.executePromptSequence();
       return;
     }
 
@@ -31,39 +29,58 @@ export class Agent {
       case "profile":
         await this.executeProfileTask();
         break;
+      case "navigate":
+        await this.executeNavigateTask();
+        break;
+    }
+  }
+
+  private getPromptQuery(defaultQuery: string): string {
+    return this.config.promptText?.trim() || defaultQuery;
+  }
+
+  private async executePromptSequence(): Promise<void> {
+    const promptText = this.getPromptQuery(this.config.description);
+    const plan = buildPromptExecutionPlan(promptText);
+
+    if (plan.url) {
+      await navigateToUrl(this.page!, plan.url);
+      return;
+    }
+
+    if (plan.actions.includes("search") || plan.actions.includes("watch") || plan.actions.includes("subscribe")) {
+      await searchWeb(this.page!, plan.query || this.config.profile.interests.join(" "));
+    }
+
+    if (plan.actions.includes("profile")) {
+      const profileTarget = normalizeUrlFromPrompt(promptText) || "https://example.com/profile";
+      await navigateToUrl(this.page!, profileTarget);
     }
   }
 
   private async executeWatchTask(): Promise<void> {
-    await searchYouTube(this.page!, `${this.config.interests[0]} ${this.config.interests[1]} trending`);
-    const firstVideo = await this.page!.$("ytd-video-renderer a#video-title");
-    if (firstVideo) {
-      const url = await firstVideo.getAttribute("href");
-      if (url) {
-        await openVideo(this.page!, `https://www.youtube.com${url}`);
-        await watchVideo(this.page!);
-      }
-    }
+    await searchWeb(this.page!, this.getPromptQuery(this.config.profile.interests.join(" ")));
   }
 
   private async executeSubscribeTask(): Promise<void> {
-    await searchYouTube(this.page!, `${this.config.interests[0]} ${this.config.interests[1]} channel`);
-    const channelLink = await this.page!.$("a#main-link");
-    if (channelLink) {
-      const url = await channelLink.getAttribute("href");
-      if (url) {
-        await this.page!.goto(`https://www.youtube.com${url}`, { waitUntil: "domcontentloaded" });
-        await subscribeToChannel(this.page!);
-      }
-    }
+    await searchWeb(this.page!, this.getPromptQuery(this.config.profile.interests.join(" ")));
   }
 
   private async executeSearchTask(): Promise<void> {
-    await searchYouTube(this.page!, `${this.config.interests[0]} ${this.config.interests[1]} tutorials`);
+    await searchWeb(this.page!, this.getPromptQuery(this.config.profile.interests.join(" ")));
+  }
+
+  private async executeNavigateTask(): Promise<void> {
+    const prompt = this.getPromptQuery("");
+    const url = normalizeUrlFromPrompt(prompt);
+    if (!url) {
+      throw new Error(`No URL found in prompt: "${prompt}"`);
+    }
+    await navigateToUrl(this.page!, url);
   }
 
   private async executeProfileTask(): Promise<void> {
-    await signInYouTube(this.page!, this.config);
-    await createProfilePlaceholder(this.page!, this.config);
+    const profileTarget = normalizeUrlFromPrompt(this.getPromptQuery("")) || "https://example.com/profile";
+    await navigateToUrl(this.page!, profileTarget);
   }
 }

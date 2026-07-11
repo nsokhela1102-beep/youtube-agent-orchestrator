@@ -1,0 +1,89 @@
+﻿<script>
+    function appendLog(message) {
+      const output = document.getElementById('output');
+      if (!output) return;
+      output.textContent += message + '
+';
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function setStatus(message) {
+      const status = document.getElementById('status');
+      if (status) {
+        status.textContent = message;
+      }
+    }
+
+    let eventSource = null;
+
+    function createEventSource(prompt, agentCount, concurrency) {
+      const url = '/events?prompt=' + encodeURIComponent(prompt) + '&agentCount=' + agentCount + '&concurrency=' + concurrency;
+      const source = new EventSource(url);
+
+      source.onopen = () => {
+        setStatus('Agents are executing the prompt...');
+        appendLog('Connected to agent stream...');
+      };
+
+      source.onmessage = (event) => {
+        appendLog(event.data);
+      };
+
+      source.addEventListener('end', () => {
+        appendLog('Agent execution completed.');
+        setStatus('Agent execution completed.');
+        const button = document.getElementById('runButton');
+        if (button) button.disabled = false;
+        source.close();
+      });
+
+      source.onerror = () => {
+        appendLog('Agent execution stream ended with an error.');
+        setStatus('Agent execution failed.');
+        const button = document.getElementById('runButton');
+        if (button) button.disabled = false;
+        source.close();
+      };
+
+      return source;
+    }
+
+    function handleRunClick() {
+      const promptElement = document.getElementById('prompt');
+      const agentCountElement = document.getElementById('agentCount');
+      const concurrencyElement = document.getElementById('concurrency');
+      const button = document.getElementById('runButton');
+
+      const prompt = promptElement ? promptElement.value.trim() : '';
+      const agentCount = agentCountElement ? Number(agentCountElement.value) : 1;
+      const concurrency = concurrencyElement ? Number(concurrencyElement.value) : 1;
+
+      if (!prompt) {
+        alert('Enter a prompt to continue.');
+        return;
+      }
+
+      if (eventSource) {
+        eventSource.close();
+      }
+
+      if (button) {
+        button.disabled = true;
+      }
+
+      setStatus('Launching agents...');
+      const output = document.getElementById('output');
+      if (output) {
+        output.textContent = '';
+      }
+      appendLog('Prompt: ' + prompt);
+      appendLog('Agents: ' + agentCount + ', Concurrency: ' + concurrency);
+
+      eventSource = createEventSource(prompt, agentCount, concurrency);
+    }
+
+    const button = document.getElementById('runButton');
+    if (button) {
+      button.addEventListener('click', handleRunClick);
+    }
+  
