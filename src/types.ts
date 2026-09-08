@@ -15,3 +15,17 @@ export interface AgentConfig {
   description: string;
   promptText?: string;
 }
+
+// Universal Task Type - Added for universal agent
+export interface PlannedTask {
+  id: string;
+  type: string;
+  description: string;
+  instruction?: string;
+  url?: string;
+  requiresAuth: boolean;
+  parallelGroup: number;
+  cron?: string;
+  originalInstruction?: string;
+  [key: string]: any;
+}

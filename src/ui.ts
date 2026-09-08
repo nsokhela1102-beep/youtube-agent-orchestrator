@@ -1,9 +1,9 @@
 import express, { type Request, type Response } from "express";
-import { launchBrowser } from "./browserAutomation.js";
-import { AGENTS } from "./agents.js";
-import { runAgents } from "./orchestrator.js";
-import type { AgentConfig } from "./types.js";
-import type { LogCallback } from "./orchestrator.js";
+import { launchBrowser } from "./browserAutomation";
+import { AGENTS } from "./agents";
+import { runAgents } from "./orchestrator";
+import type { AgentConfig } from "./types";
+import type { LogCallback } from "./orchestrator";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -179,7 +179,7 @@ function createPromptAgents(prompt: string, count: number): AgentConfig[] {
 }
 
 app.get("/events", async (req: Request, res: Response) => {
-    const prompt = String(req.query.prompt || "");
+    const prompt = String(req.query.prompt || ");
     const count = Math.max(1, Math.min(20, Number(req.query.agentCount) || 1));
     const parallel = Math.max(1, Math.min(5, Number(req.query.concurrency) || 1));
 

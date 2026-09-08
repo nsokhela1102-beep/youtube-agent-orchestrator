@@ -1,4 +1,4 @@
-import * as automation from "./browserAutomation.js";
+import * as automation from "./browserAutomation";
 
 test("browserAutomation exports expected helpers", () => {
     expect(typeof automation.launchBrowser).toBe("function");

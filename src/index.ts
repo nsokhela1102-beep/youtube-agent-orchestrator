@@ -1,6 +1,6 @@
-import { launchBrowser } from "./browserAutomation.js";
-import { AGENTS } from "./agents.js";
-import { runAgents } from "./orchestrator.js";
+import { launchBrowser } from "./browserAutomation";
+import { AGENTS } from "./agents";
+import { runAgents } from "./orchestrator";
 
 async function main() {
   const countArg = process.argv[2];

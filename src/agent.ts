@@ -1,7 +1,7 @@
-import type { AgentConfig } from "./types.js";
+import type { AgentConfig } from "./types";
 import type { Page } from "playwright";
-import { searchWeb, navigateToUrl, normalizeUrlFromPrompt } from "./browserAutomation.js";
-import { buildPromptExecutionPlan } from "./promptPlanner.js";
+import { searchWeb, navigateToUrl, normalizeUrlFromPrompt } from "./browserAutomation";
+import { buildPromptExecutionPlan } from "./promptPlanner";
 
 export class Agent {
   constructor(public config: AgentConfig, private page: Page | null) { }
@@ -71,7 +71,7 @@ export class Agent {
   }
 
   private async executeNavigateTask(): Promise<void> {
-    const prompt = this.getPromptQuery("");
+    const prompt = this.getPromptQuery(");
     const url = normalizeUrlFromPrompt(prompt);
     if (!url) {
       throw new Error(`No URL found in prompt: "${prompt}"`);
@@ -80,7 +80,7 @@ export class Agent {
   }
 
   private async executeProfileTask(): Promise<void> {
-    const profileTarget = normalizeUrlFromPrompt(this.getPromptQuery("")) || "https://example.com/profile";
+    const profileTarget = normalizeUrlFromPrompt(this.getPromptQuery(")) || "https://example.com/profile";
     await navigateToUrl(this.page!, profileTarget);
   }
 }

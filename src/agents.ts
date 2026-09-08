@@ -1,4 +1,4 @@
-import type { AgentConfig } from "./types.js";
+import type { AgentConfig } from "./types";
 
 const regions = ["US", "UK", "CA", "AU", "IN", "DE", "FR", "BR", "JP", "ZA"];
 const interests = [

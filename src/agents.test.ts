@@ -1,5 +1,5 @@
-import { AGENTS } from "./agents.js";
-import { buildPromptExecutionPlan } from "./promptPlanner.js";
+import { AGENTS } from "./agents";
+import { buildPromptExecutionPlan } from "./promptPlanner";
 
 test("should create 100 agents", () => {
     expect(AGENTS.length).toBe(100);
