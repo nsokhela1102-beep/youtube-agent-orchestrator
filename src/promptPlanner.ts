@@ -1,49 +1,41 @@
-import type { PlannedTask } from "./types";
+import type { PlannedTask } from "./types.js";
 
 function extractUrl(text: string): string | undefined {
-  const m = text.match(/https?:\/\/[^\s]+/);
-  return m ? m[0] : undefined;
+  const parts = text.split(/\s+/);
+  const found = parts.find(p => p.startsWith("http://") || p.startsWith("https://"));
+  if (!found) return undefined;
+  return found.replace(/[),.;!]+$/, "");
+}
+
+function extractCommand(text: string): string {
+  const m = text.match(/npm\s+[^\n]+/i);
+  return m ? m[0] : text;
 }
 
 export function buildPromptExecutionPlan(prompt: string) {
   const lower = prompt.toLowerCase();
   const actions: string[] = [];
 
-  // YouTube / watch / subscribe prompts -> search + watch + subscribe
-  const isYouTubeLike = lower.includes("watch") || lower.includes("tutorial") || lower.includes("channel") || lower.includes("subscribe") || lower.includes("programming");
-  if (isYouTubeLike) {
+  if (lower.includes("watch") || lower.includes("tutorial") || lower.includes("channel") || lower.includes("programming")) {
     actions.push("search");
   }
   if (lower.includes("watch")) actions.push("watch");
   if (lower.includes("subscribe")) actions.push("subscribe");
   if (lower.includes("search") && !actions.includes("search")) actions.push("search");
 
-  // navigation
-  if (lower.includes("open") || lower.includes("navigate") || lower.includes("http") || lower.includes("example.com") || lower.includes("review")) {
+  if (lower.includes("open") || lower.includes("navigate") || lower.includes("http") || lower.includes("example.com")) {
     actions.push("navigate");
   }
-  // shell
-  if (lower.includes("run") || lower.includes("npm") || lower.includes("command") || lower.includes("build") || lower.includes("verify")) {
+  if (lower.includes("run") || lower.includes("npm") || lower.includes("command") || lower.includes("build")) {
     actions.push("command");
   }
-  // file
   if (lower.includes("file") || lower.includes("report") || lower.includes("create")) {
     actions.push("file");
   }
 
   const url = extractUrl(prompt);
-
-  // command extraction - test expects "npm test"
-  let command: string | undefined;
-  const npmMatch = prompt.match(/npm\s+[^\n]+/i);
-  if (npmMatch) command = npmMatch[0];
-  else if (lower.includes("run") || lower.includes("command")) command = prompt;
-
-  // filePath - test only checks defined
-  let filePath: string | undefined;
-  if (actions.includes("file")) {
-    filePath = "report.md";
-  }
+  const hasCommand = actions.includes("command");
+  const hasFile = actions.includes("file");
 
   return {
     prompt,
@@ -51,23 +43,35 @@ export function buildPromptExecutionPlan(prompt: string) {
     actions: [...new Set(actions)],
     url,
     targetUrl: url,
-    command,
-    filePath,
+    command: hasCommand ? extractCommand(prompt) : undefined,
+    filePath: hasFile ? "report.md" : undefined,
   };
 }
 
-export async function planTasks(userInstruction: string): Promise<{ tasks: PlannedTask[], humanUnderstanding: string }> {
+export async function planTasks(userInstruction: string) {
   const plan = buildPromptExecutionPlan(userInstruction);
-  const tasks = plan.actions.map((type, i) => ({
+  const tasks: PlannedTask[] = plan.actions.map((type, i) => ({
     id: `${type}-${i}`,
     title: userInstruction,
-    group: i + 1,
+    parallelGroup: i + 1,
     type,
-    payload: { instruction: userInstruction, url: plan.url, command: plan.command, filePath: plan.filePath },
-  } as PlannedTask));
+    payload: {
+      instruction: userInstruction,
+      url: plan.url,
+      command: plan.command,
+      filePath: plan.filePath,
+    },
+  }));
 
-  return {
-    tasks: tasks.length ? tasks : [{ id: "generic-1", title: userInstruction, group: 1, type: "generic", payload: { instruction: userInstruction } } as PlannedTask],
-    humanUnderstanding: userInstruction,
-  };
+  if (tasks.length === 0) {
+    tasks.push({
+      id: "generic-1",
+      title: userInstruction,
+      parallelGroup: 1,
+      type: "generic",
+      payload: { instruction: userInstruction },
+    });
+  }
+
+  return { tasks, humanUnderstanding: userInstruction };
 }
