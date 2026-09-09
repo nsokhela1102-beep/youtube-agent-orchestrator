@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>🎤 Wired Voice → Real Agent</title>
+    <style>
+        body {
+            background: #0f0f0f;
+            color: white;
+            font-family: Arial;
+            padding: 40px;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        .online {
+            background: #0a2e14;
+            color: #2eff6a;
+            border: 1px solid #2eff6a;
+        }
+
+        .offline {
+            background: #3a0a0a;
+            color: #ff4a4a;
+            border: 1px solid #ff4a4a;
+        }
+
+        button {
+            background: #ff0000;
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+        }
+
+        button.listening {
+            background: #00c853;
+            animation: pulse 1s infinite;
+        }
+
+        button.proceed {
+            background: #00c853;
+        }
+
+        button.cancel {
+            background: #555;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1)
+            }
+
+            50% {
+                transform: scale(1.05)
+            }
+
+            100% {
+                transform: scale(1)
+            }
+        }
+
+        .box {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            border-left: 4px solid #ff0000;
+        }
+
+        #proceedArea {
+            display: none;
+            background: #1a2e1a;
+            border: 2px solid #2eff6a;
+            padding: 20px;
+            border-radius: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🎤 Real Voice → Real Agent</h1>
+    <div id="status" class="status offline">🔴 Checking...</div>
+    <button id="startBtn">🎤 Start Listening (REAL MIC)</button>
+    <div class="box" id="transcript">Say anything: "open woolworths website" or "picture of vw polo"</div>
+
+    <div id="proceedArea">
+        <h3>📌 SAVED ORIGINAL PROMPT:</h3>
+        <p id="pendingText" style="font-size:22px; color:#2eff6a; font-weight:bold;"></p>
+        <p>👉 Now CLICK "Start Listening" AGAIN and say <b>YES</b> or <b>NO</b></p>
+        <button id="proceedBtn" class="proceed">✅ Yes, Proceed</button>
+        <button id="cancelBtn" class="cancel">❌ No, Cancel</button>
+    </div>
+
+    <div class="box" id="result">Waiting...</div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const transcriptEl = document.getElementById('transcript');
+        const resultEl = document.getElementById('result');
+        const proceedArea = document.getElementById('proceedArea');
+        const pendingText = document.getElementById('pendingText');
+
+        let ORIGINAL_PROMPT = "";
+        let waitingForYesNo = false;
+
+        function speak(text) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'en-US'; u.rate = 1;
+            window.speechSynthesis.speak(u);
+        }
+
+        async function checkServer() { try { const r = await fetch('/status'); if (r.ok) { statusEl.className = 'status online'; statusEl.innerHTML = '🟢 Server ONLINE - Flexible'; return; } } catch { } statusEl.className = 'status offline'; statusEl.innerHTML = '🔴 Server OFFLINE'; }
+        setInterval(checkServer, 2000); checkServer();
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        // MIC 1: For original prompt ONLY
+        const mainRecognition = new SpeechRecognition();
+        mainRecognition.continuous = false; mainRecognition.interimResults = false; mainRecognition.lang = 'en-US';
+
+        // MIC 2: For YES/NO ONLY - separate so it can never overwrite original
+        const yesNoRecognition = new SpeechRecognition();
+        yesNoRecognition.continuous = false; yesNoRecognition.interimResults = false; yesNoRecognition.lang = 'en-US';
+
+        document.getElementById('startBtn').onclick = () => {
+            if (waitingForYesNo) {
+                // We are waiting for YES/NO - use the YES/NO mic
+                yesNoRecognition.start();
+                document.getElementById('startBtn').classList.add('listening');
+                document.getElementById('startBtn').innerHTML = '🎧 Listening for YES or NO...';
+                resultEl.innerHTML = '🎧 Say YES or NO now... Original locked: ' + ORIGINAL_PROMPT;
+            } else {
+                // New prompt
+                ORIGINAL_PROMPT = "";
+                proceedArea.style.display = 'none';
+                mainRecognition.start();
+                document.getElementById('startBtn').classList.add('listening');
+                document.getElementById('startBtn').innerHTML = '🎧 Listening for prompt...';
+                transcriptEl.innerHTML = 'Listening...';
+            }
+        };
+
+        // MAIN PROMPT - Saves original, never overwritten by yes/no
+        mainRecognition.onresult = (e) => {
+            const heard = e.results[0][0].transcript.trim();
+            ORIGINAL_PROMPT = heard;
+            localStorage.setItem('ORIGINAL_PROMPT', heard);
+            waitingForYesNo = true;
+
+            document.getElementById('startBtn').classList.remove('listening');
+            document.getElementById('startBtn').innerHTML = '🎤 Start Listening (REAL MIC)';
+            transcriptEl.innerHTML = `You said: "${ORIGINAL_PROMPT}"`;
+            pendingText.innerHTML = `"${ORIGINAL_PROMPT}"`;
+            proceedArea.style.display = 'block';
+            resultEl.innerHTML = `✅ Saved: "${ORIGINAL_PROMPT}" - Now click START again and say YES`;
+            speak(`You said ${ORIGINAL_PROMPT}. Do you want me to proceed? Say yes or no.`);
+        };
+
+        // YES/NO PROMPT - Uses separate mic, checks yes/no, executes ORIGINAL
+        yesNoRecognition.onresult = (e) => {
+            const heard = e.results[0][0].transcript.trim().toLowerCase();
+            document.getElementById('startBtn').classList.remove('listening');
+            document.getElementById('startBtn').innerHTML = '🎤 Start Listening (REAL MIC)';
+            transcriptEl.innerHTML = `Original: "${ORIGINAL_PROMPT}"<br>Heard: "${heard}"`;
+
+            if (heard.includes('yes') || heard.includes('yeah') || heard.includes('yep') || heard.includes('proceed') || heard.includes('sure')) {
+                executeOriginal();
+            } else if (heard.includes('no') || heard.includes('nope') || heard.includes('cancel') || heard.includes('stop')) {
+                cancelOriginal();
+            } else {
+                resultEl.innerHTML = `Heard "${heard}" - Please say YES or NO. Click START again.`;
+                speak(`Please say yes or no.`);
+            }
+        };
+
+        function executeOriginal() {
+            const promptToUse = localStorage.getItem('ORIGINAL_PROMPT') || ORIGINAL_PROMPT;
+            const lower = promptToUse.toLowerCase();
+
+            proceedArea.style.display = 'none';
+            waitingForYesNo = false;
+
+            const isImageRequest = (lower.includes('picture') || lower.includes('image') || lower.includes('photo')) && !lower.includes('website');
+
+            if (isImageRequest) {
+                let q = promptToUse.replace(/^(show me|open|a|picture of|image of|photo of|pic of)/gi, '').trim();
+                resultEl.innerHTML = `🖼️ Opening images for: ${q}`;
+                speak(`Opening images for ${q}`);
+                window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}&udm=2`, '_blank');
+            } else {
+                resultEl.innerHTML = '🧠 Sending to agent: ' + promptToUse;
+                speak(`Proceeding with ${promptToUse}`);
+            }
+
+            fetch('/execute', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: promptToUse }) })
+                .then(r => r.json()).then(data => {
+                    resultEl.innerHTML += `<br><br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    speak(`Done.`);
+                    ORIGINAL_PROMPT = ""; localStorage.removeItem('ORIGINAL_PROMPT');
+                });
+        }
+
+        function cancelOriginal() {
+            proceedArea.style.display = 'none';
+            waitingForYesNo = false;
+            resultEl.innerHTML = `Cancelled: "${ORIGINAL_PROMPT}"`;
+            speak('Cancelled');
+            ORIGINAL_PROMPT = ""; localStorage.removeItem('ORIGINAL_PROMPT');
+        }
+
+        document.getElementById('proceedBtn').onclick = executeOriginal;
+        document.getElementById('cancelBtn').onclick = cancelOriginal;
+
+        mainRecognition.onerror = (e) => {
+            document.getElementById('startBtn').classList.remove('listening');
+            document.getElementById('startBtn').innerHTML = '🎤 Start Listening (REAL MIC)';
+            resultEl.innerHTML = 'Mic error: ' + e.error;
+        };
+        yesNoRecognition.onerror = (e) => {
+            document.getElementById('startBtn').classList.remove('listening');
+            document.getElementById('startBtn').innerHTML = '🎤 Start Listening (REAL MIC)';
+            resultEl.innerHTML = 'Could not hear YES/NO - Click START again and say YES or NO loudly. Or click the buttons.';
+        };
+    </script>
+</body>
+
+</html>
