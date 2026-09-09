@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Voice Prompt Tester - REAL MIC</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 700px;
+            margin: 50px auto;
+            background: #111;
+            color: #fff;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #ff0000;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+        }
+
+        button.listening {
+            background: #00ff00;
+            color: #000;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        #transcript {
+            margin: 20px 0;
+            padding: 20px;
+            background: #222;
+            border-radius: 10px;
+            min-height: 50px;
+            font-size: 20px;
+        }
+
+        #tasks {
+            padding: 20px;
+            background: #333;
+            border-radius: 10px;
+        }
+
+        .history {
+            margin-top: 20px;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🎤 Real Voice Prompt Test</h1>
+    <p>Click and SPEAK. This uses your actual microphone.</p>
+    <button id="btn">🎤 Start Listening</button>
+    <div id="transcript">Your voice will appear here...</div>
+    <div id="tasks"></div>
+    <div class="history" id="history"></div>
+
+    <script>
+        const btn = document.getElementById('btn');
+        const transcriptEl = document.getElementById('transcript');
+        const tasksEl = document.getElementById('tasks');
+        const historyEl = document.getElementById('history');
+        let history = JSON.parse(localStorage.getItem('voiceHistory') || '[]');
+        let recognition;
+
+        function detectActions(text) {
+            const t = text.toLowerCase();
+            const actions = [];
+            if (t.includes('open') || t.includes('go to') || t.includes('youtube.com') || t.includes('example.com') || t.includes('navigate')) actions.push('navigate');
+            if (t.includes('run') || t.includes('npm') || t.includes('command') || t.includes('build')) actions.push('command');
+            if (t.includes('create') || t.includes('file') || t.includes('report') || t.includes('save')) actions.push('file');
+            if (t.includes('search') || t.includes('find') || t.includes('look for')) actions.push('search');
+            if (t.includes('watch') || t.includes('play') || t.includes('video')) actions.push('watch');
+            if (t.includes('subscribe')) actions.push('subscribe');
+            return actions.length ? actions : ['generic'];
+        }
+
+        function renderHistory() {
+            historyEl.innerHTML = '<h3>📜 Remembered (' + history.length + '):</h3>' + history.slice(-10).reverse().map(h => `[${h.medium}] ${h.text}`).join('<br>');
+        }
+        renderHistory();
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SR();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => { btn.textContent = '🔴 Listening... Speak now'; btn.classList.add('listening'); };
+            recognition.onend = () => { btn.textContent = '🎤 Start Listening'; btn.classList.remove('listening'); };
+            recognition.onresult = (e) => {
+                const text = e.results[0][0].transcript;
+                transcriptEl.textContent = '🎤 YOU SAID: "' + text + '"';
+                if (e.results[0].isFinal) {
+                    const actions = detectActions(text);
+                    tasksEl.innerHTML = '<b>MEDIUM: voice (REAL MIC)</b><br>ACTIONS: ' + actions.join(', ') + '<br><br>✅ This would trigger: ' + actions.map(a => a + ' task').join(', ');
+                    history.push({ text, medium: 'voice', time: new Date().toISOString() });
+                    localStorage.setItem('voiceHistory', JSON.stringify(history));
+                    renderHistory();
+                }
+            };
+            recognition.onerror = (e) => { transcriptEl.textContent = 'Error: ' + e.error + ' - Use Chrome and allow mic'; };
+
+            btn.onclick = () => recognition.start();
+        } else {
+            transcriptEl.textContent = '❌ Your browser does not support voice. Use Google Chrome.';
+        }
+    </script>
+</body>
+
+</html>

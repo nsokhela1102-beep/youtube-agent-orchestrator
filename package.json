@@ -14,10 +14,14 @@
     "dev:headless": "cross-env HEADLESS=true npx ts-node src/index.ts",
     "start:concurrent": "cross-env MAX_CONCURRENCY=5 HEADLESS=true node dist/index.js",
     "start:ui": "node dist/ui.js",
-    "dev:ui": "npx ts-node src/ui.ts"
+    "dev:ui": "npx ts-node src/ui.ts",
+    "voice": "tsx src/voiceServer.ts",
+    "ui": "start src/voiceUI_wired.html"
   },
   "dependencies": {
+    "cors": "^2.8.6",
     "express": "^4.19.0",
+    "open": "^11.0.2",
     "playwright": "^1.54.0"
   },
   "devDependencies": {

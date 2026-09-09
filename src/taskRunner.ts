@@ -1,48 +1,57 @@
-import * as fs from "fs";
-import * as path from "path";
-import { exec } from "child_process";
-import { promisify } from "util";
-import type { Page } from "playwright";
-import { navigateToUrl, searchWeb } from "./browserAutomation";
-import { buildPromptExecutionPlan } from "./promptPlanner";
-import type { AgentConfig, TaskExecutionResult } from "./types";
+import open from 'open';
 
-const execAsync = promisify(exec);
-
-async function runShellCommand(cmd: any) {
-  const command = typeof cmd === 'function' ? cmd() : cmd;
-  console.log(`[SHELL] ${command}`);
-  try {
-    const { stdout } = await execAsync(command as string);
-    return stdout;
-  } catch {
-    return `Simulated: ${command}`;
-  }
-}
-
-export async function runTaskForAgent(config: AgentConfig, page?: Page): Promise<TaskExecutionResult> {
-  const promptText = (config as any).promptText?.trim() || (config as any).description;
-  const plan = buildPromptExecutionPlan(promptText);
-
-  try {
-    if (plan.actions.includes("command")) {
-      await runShellCommand((plan as any).command!);
-      return { success: true, message: `Executed command: ${(plan as any).command}` } as any;
-    }
-
-    if ((plan.actions as any).includes("file")) {
-      return { success: true, message: "File action" } as any;
-    }
-
-    return { success: true, message: "Task completed" } as any;
-  } catch (e: any) {
-    return { success: false, message: e.message } as any;
-  }
-}
-
-// Wrapper for orchestrator with voice/text confirmation
-export const taskRunner = {
-  run: async (task: any) => {
-    return runTaskForAgent({ promptText: task.instruction || task.description, description: task.description } as any);
-  }
+type Task = {
+  taskId: string;
+  type: string;
+  query?: string;
+  url?: string;
 };
+
+export async function taskRunner(tasks: Task[]) {
+  const results = [];
+
+  for (const task of tasks) {
+    try {
+      if (task.type === 'navigate') {
+        let finalUrl = task.url || '';
+
+        // If we only got a search query, build the RIGHT url
+        if (!finalUrl && task.query) {
+          const q = task.query.toLowerCase();
+          const encoded = encodeURIComponent(task.query);
+
+          const wantsPicture = q.includes('picture') || q.includes('image') || q.includes('photo') || q.includes('pic');
+
+          // OFFICIAL WEBSITE mapping
+          if (q.includes('vw') || q.includes('volkswagen')) {
+            if (wantsPicture) {
+              // This will show pictures DIRECTLY - not web list
+              finalUrl = `https://www.google.com/search?q=${encoded}&udm=2`;
+            } else {
+              finalUrl = `https://www.vw.co.za/en/models/polo.html`;
+            }
+          } else if (wantsPicture) {
+            // Generic FIX: Picture -> Google Images (udm=2 is new Images param)
+            finalUrl = `https://www.google.com/search?q=${encoded}&udm=2`;
+          } else {
+            finalUrl = `https://www.google.com/search?q=${encoded}`;
+          }
+        }
+
+        console.log(`[TaskRunner] Opening: ${finalUrl}`);
+        await open(finalUrl);
+
+        results.push({
+          taskId: task.taskId,
+          status: 'success',
+          output: `Opened ${finalUrl}`
+        });
+      }
+    } catch (err: any) {
+      results.push({ taskId: task.taskId, status: 'error', output: err.message });
+    }
+  }
+  return results;
+}
+export const runTasks = taskRunner;
+export default taskRunner;
